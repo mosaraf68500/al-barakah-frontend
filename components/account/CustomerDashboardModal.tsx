@@ -14,18 +14,15 @@ import {
   Trash2, 
   Check, 
   Phone, 
-  Mail, 
   ShieldCheck,
   ShoppingBag,
+  ShoppingCart,
   LayoutDashboard,
-  ExternalLink,
-  ChevronRight,
-  Clock,
   Truck,
   CheckCircle2,
-  AlertCircle
 } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
+import { useCartStore } from '@/store/cartStore';
 import { Order, Product } from '@/types';
 import { ApiError } from '@/lib/api/http';
 import { createMyAddress, deleteMyAddress, getMyOrders, listMyAddresses, updateMyAddress, updateMyProfile } from '@/lib/api';
@@ -91,6 +88,8 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
   const userEmailLower = user?.email?.toLowerCase().trim() || profile?.email?.toLowerCase().trim() || '';
   
   const [activeTab, setActiveTab] = useState<DashboardTab>('OVERVIEW');
+  const [trackCode, setTrackCode] = useState('');
+  const cartCount = useCartStore((s) => s.items.reduce((n, item) => n + item.quantity, 0));
   
   // User profile state
   const [name, setName] = useState(profile?.name || user?.displayName || '');
@@ -334,6 +333,10 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
   });
 
   const displayOrders = customerOrders.length > 0 ? customerOrders : fallbackOrders;
+  const orderedProductCount = displayOrders.reduce((sum, order) => {
+    const qty = order.items?.reduce((n: number, item: { quantity?: number }) => n + (item.quantity || 1), 0) ?? 0;
+    return sum + (qty || 1);
+  }, 0);
 
   const displayName = profile?.name || user?.displayName || 'Customer';
   const initials = displayName.slice(0, 2).toUpperCase();
@@ -347,33 +350,51 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
     { id: 'PROFILE', label: 'প্রোফাইল', icon: <User className="w-4 h-4" /> },
   ];
 
+  const statusLabel = (raw: string) => {
+    const key = raw.toLowerCase();
+    if (key === 'delivered') return 'ডেলিভার্ড';
+    if (key === 'shipped') return 'পাঠানো হয়েছে';
+    if (key === 'processing' || key === 'confirmed') return 'প্রসেসিং';
+    if (key === 'cancelled') return 'বাতিল';
+    return 'পেন্ডিং';
+  };
+
   return (
     <div className="w-full bg-[#f6f4f0] min-h-[calc(100vh-72px)]" id="customer-dashboard">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-[#0A3828] text-white flex items-center justify-center font-bold text-sm">
-              {initials}
+        <div className="relative overflow-hidden rounded-3xl bg-[#0A3828] text-white px-5 py-6 sm:px-7 sm:py-7 mb-6 shadow-lg shadow-emerald-950/10">
+          <div className="absolute -right-10 -top-12 h-40 w-40 rounded-full bg-[#D4AF37]/15" />
+          <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-white/10 border border-white/15 text-[#D4AF37] flex items-center justify-center font-bold text-base">
+                {initials}
+              </div>
+              <div>
+                <p className="text-[11px] font-semibold tracking-[0.18em] uppercase text-emerald-200/80">আমার অ্যাকাউন্ট</p>
+                <h1 className="text-2xl sm:text-[30px] font-bold leading-tight" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+                  {displayName}
+                </h1>
+                {accountLine && <p className="text-xs text-emerald-100/80 mt-1">{accountLine}</p>}
+              </div>
             </div>
-            <div>
-              <p className="text-[11px] font-semibold tracking-[0.16em] uppercase text-[#0A3828]/70">My Account</p>
-              <h1
-                className="text-2xl sm:text-[28px] font-bold text-stone-900 leading-tight"
-                style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => openTab('PROFILE')}
+                className="px-4 py-2 rounded-xl bg-white text-[#0A3828] text-xs font-bold cursor-pointer"
               >
-                {displayName}
-              </h1>
-              {accountLine && <p className="text-xs text-stone-500 mt-0.5">{accountLine}</p>}
+                প্রোফাইল
+              </button>
+              <button
+                type="button"
+                onClick={() => { void signOut(); router.push('/'); }}
+                className="px-4 py-2 rounded-xl border border-white/20 text-white hover:bg-white/10 text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                লগআউট
+              </button>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => { void signOut(); router.push('/'); }}
-            className="self-start sm:self-auto px-4 py-2 rounded-xl border border-stone-200 bg-white text-rose-700 hover:bg-rose-50 text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            লগআউট
-          </button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] gap-5 items-start">
@@ -401,60 +422,103 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
           <div className="min-w-0">
           {activeTab === 'OVERVIEW' && (
             <div className="space-y-5">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <button type="button" onClick={() => openTab('ORDERS')} className="text-left bg-white border border-stone-200 rounded-2xl p-4 hover:border-[#0A3828] cursor-pointer">
-                  <Package className="w-4 h-4 text-[#0A3828]" />
-                  <p className="text-2xl font-bold text-stone-900 mt-3">{displayOrders.length}</p>
-                  <p className="text-xs text-stone-500">মোট অর্ডার</p>
-                </button>
-                <button type="button" onClick={() => openTab('WISHLIST')} className="text-left bg-white border border-stone-200 rounded-2xl p-4 hover:border-[#0A3828] cursor-pointer">
-                  <Heart className="w-4 h-4 text-[#0A3828]" />
-                  <p className="text-2xl font-bold text-stone-900 mt-3">{wishlist.length}</p>
-                  <p className="text-xs text-stone-500">উইশলিস্ট</p>
-                </button>
-                <button type="button" onClick={() => openTab('ADDRESSES')} className="text-left bg-white border border-stone-200 rounded-2xl p-4 hover:border-[#0A3828] cursor-pointer">
-                  <MapPin className="w-4 h-4 text-[#0A3828]" />
-                  <p className="text-2xl font-bold text-stone-900 mt-3">{addresses.length}</p>
-                  <p className="text-xs text-stone-500">সেভ করা ঠিকানা</p>
-                </button>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                {[
+                  { label: 'মোট অর্ডার', value: displayOrders.length, hint: 'সব অর্ডার', icon: <Package className="w-4 h-4" />, onClick: () => openTab('ORDERS') },
+                  { label: 'অর্ডার করা পণ্য', value: orderedProductCount, hint: 'মোট পিস', icon: <ShoppingBag className="w-4 h-4" />, onClick: () => openTab('ORDERS') },
+                  { label: 'উইশলিস্ট', value: wishlist.length, hint: 'সেভ করা', icon: <Heart className="w-4 h-4" />, onClick: () => openTab('WISHLIST') },
+                  { label: 'চেকআউটে', value: cartCount, hint: 'কার্টে আছে', icon: <ShoppingCart className="w-4 h-4" />, onClick: () => router.push('/cart') },
+                ].map((card) => (
+                  <button key={card.label} type="button" onClick={card.onClick} className="text-left bg-white border border-stone-200 rounded-2xl p-4 hover:border-[#0A3828] hover:shadow-sm transition-all cursor-pointer">
+                    <div className="w-8 h-8 rounded-xl bg-[#e7f0ec] text-[#0A3828] flex items-center justify-center">{card.icon}</div>
+                    <p className="text-2xl font-bold text-stone-900 mt-3">{card.value}</p>
+                    <p className="text-xs font-semibold text-stone-800">{card.label}</p>
+                    <p className="text-[11px] text-stone-400 mt-0.5">{card.hint}</p>
+                  </button>
+                ))}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,0.8fr)] gap-3">
                 <div className="bg-white border border-stone-200 rounded-2xl p-5">
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center justify-between mb-4">
                     <h2 className="text-sm font-bold text-stone-900">সাম্প্রতিক অর্ডার</h2>
                     <button type="button" onClick={() => openTab('ORDERS')} className="text-xs font-semibold text-[#0A3828] cursor-pointer">সব দেখুন</button>
                   </div>
                   {isLoadingOrders && displayOrders.length === 0 ? (
                     <p className="text-xs text-stone-500">অর্ডার লোড হচ্ছে...</p>
                   ) : displayOrders.length === 0 ? (
-                    <p className="text-xs text-stone-500">এখনো কোনো অর্ডার নেই।</p>
+                    <p className="text-xs text-stone-500">এখনো কোনো অর্ডার নেই। শপে গেলে এখানে ট্র্যাক করতে পারবেন।</p>
                   ) : (
-                    <ul className="space-y-2">
-                      {displayOrders.slice(0, 3).map((order) => (
-                        <li key={order.id} className="flex items-center justify-between gap-3 text-xs border-b border-stone-100 pb-2 last:border-0">
-                          <span className="font-semibold text-stone-800">#{order.trackingCode || order.id}</span>
-                          <span className="text-stone-500">{order.orderStatus || order.status || 'pending'}</span>
-                          <span className="font-bold text-stone-900">৳{(order.totalAmount || order.total || 0).toLocaleString()}</span>
-                        </li>
-                      ))}
+                    <ul className="space-y-3">
+                      {displayOrders.slice(0, 3).map((order) => {
+                        const trackingId = order.trackingCode || order.id;
+                        const status = order.orderStatus || order.status || 'pending';
+                        return (
+                          <li key={order.id} className="flex items-center justify-between gap-3 rounded-xl bg-stone-50 px-3 py-3">
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold text-stone-900 truncate">#{trackingId}</p>
+                              <p className="text-[11px] text-stone-500 mt-0.5">{statusLabel(status)} · ৳{(order.totalAmount || order.total || 0).toLocaleString()}</p>
+                            </div>
+                            {onOpenOrderTrack && (
+                              <button type="button" onClick={() => onOpenOrderTrack(trackingId)} className="shrink-0 px-3 py-1.5 rounded-lg bg-[#0A3828] text-white text-[11px] font-bold cursor-pointer">
+                                ট্র্যাক
+                              </button>
+                            )}
+                          </li>
+                        );
+                      })}
                     </ul>
                   )}
                 </div>
-                <div className="bg-white border border-stone-200 rounded-2xl p-5">
-                  <div className="flex items-center justify-between mb-3">
-                    <h2 className="text-sm font-bold text-stone-900">ডেলিভারি ঠিকানা</h2>
-                    <button type="button" onClick={() => openTab('ADDRESSES')} className="text-xs font-semibold text-[#0A3828] cursor-pointer">ম্যানেজ</button>
-                  </div>
-                  {defaultAddress ? (
-                    <div className="text-xs text-stone-600 space-y-1">
-                      <p className="font-semibold text-stone-900">{defaultAddress.name}</p>
-                      <p>{defaultAddress.address}, {defaultAddress.district}</p>
-                      <p>{defaultAddress.phone}</p>
+
+                <div className="space-y-3">
+                  <div className="bg-white border border-stone-200 rounded-2xl p-5">
+                    <div className="flex items-center justify-between mb-3">
+                      <h2 className="text-sm font-bold text-stone-900">প্রোফাইল</h2>
+                      <button type="button" onClick={() => openTab('PROFILE')} className="text-xs font-semibold text-[#0A3828] cursor-pointer">এডিট</button>
                     </div>
-                  ) : (
-                    <p className="text-xs text-stone-500">কোনো ঠিকানা সেভ করা নেই। চেকআউট দ্রুত করতে একটি ঠিকানা যোগ করুন।</p>
-                  )}
+                    <div className="text-xs text-stone-600 space-y-1.5">
+                      <p className="font-semibold text-stone-900">{displayName}</p>
+                      <p>{phone || 'ফোন সেভ হয়নি'}</p>
+                      <p className="truncate">{user?.email || profile?.email || 'ইমেইল নেই'}</p>
+                    </div>
+                  </div>
+                  <form
+                    className="bg-white border border-stone-200 rounded-2xl p-5"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const code = trackCode.trim();
+                      if (!code) return;
+                      onOpenOrderTrack?.(code);
+                    }}
+                  >
+                    <h2 className="text-sm font-bold text-stone-900 mb-2">অর্ডার ট্র্যাক</h2>
+                    <p className="text-[11px] text-stone-500 mb-3">অর্ডার আইডি দিয়ে ডেলিভারি স্ট্যাটাস দেখুন।</p>
+                    <div className="flex gap-2">
+                      <input
+                        value={trackCode}
+                        onChange={(e) => setTrackCode(e.target.value)}
+                        placeholder="AB-000000"
+                        className="min-w-0 flex-1 px-3 py-2 rounded-xl border border-stone-200 text-xs font-mono focus:outline-none focus:border-[#0A3828]"
+                      />
+                      <button type="submit" className="px-3 py-2 rounded-xl bg-[#FF5722] text-white text-xs font-bold cursor-pointer">খুঁজুন</button>
+                    </div>
+                  </form>
+                  <div className="bg-white border border-stone-200 rounded-2xl p-5">
+                    <div className="flex items-center justify-between mb-2">
+                      <h2 className="text-sm font-bold text-stone-900">ডেলিভারি ঠিকানা</h2>
+                      <button type="button" onClick={() => openTab('ADDRESSES')} className="text-xs font-semibold text-[#0A3828] cursor-pointer">ম্যানেজ</button>
+                    </div>
+                    {defaultAddress ? (
+                      <div className="text-xs text-stone-600 space-y-1">
+                        <p className="font-semibold text-stone-900">{defaultAddress.name}</p>
+                        <p>{defaultAddress.address}, {defaultAddress.district}</p>
+                        <p>{defaultAddress.phone}</p>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-stone-500">চেকআউট দ্রুত করতে একটি ঠিকানা যোগ করুন।</p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -472,8 +536,9 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
 
               <form onSubmit={handleSaveProfile} className="bg-white border border-stone-200 rounded-2xl p-6 shadow-xs space-y-4">
                 <h3 className="text-sm font-bold text-stone-900 border-b border-stone-100 pb-2">
-                  Personal Information
+                  প্রোফাইল
                 </h3>
+                <p className="text-[11px] text-stone-500 -mt-2">নাম বদলানো যায়। ফোন লগইনের পরিচয়, তাই সেটা লক করা।</p>
 
                 <div>
                   <label className="block text-xs font-semibold text-stone-700 mb-1">
@@ -561,48 +626,41 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
                 <div className="space-y-3">
                   {displayOrders.map((order) => {
                     const trackingId = order.trackingCode || order.id;
-                    const status = order.orderStatus || order.status || 'PENDING';
+                    const status = order.orderStatus || order.status || 'pending';
                     const amount = order.totalAmount || order.total || 0;
-                    const date = order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'Recent';
+                    const date = order.createdAt ? new Date(order.createdAt).toLocaleDateString('bn-BD') : '';
+                    const pieces = order.items?.reduce((n: number, item: { quantity?: number }) => n + (item.quantity || 1), 0) || 1;
+                    const tone = status.toLowerCase();
 
                     return (
-                      <div 
+                      <div
                         key={order.id}
-                        className="bg-white border border-stone-200 rounded-2xl p-4.5 hover:border-emerald-300 transition-all shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                        className="bg-white border border-stone-200 rounded-2xl p-4 hover:border-[#0A3828]/30 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                       >
                         <div className="space-y-1.5">
                           <div className="flex items-center gap-2.5">
-                            <span className="text-xs font-bold text-stone-900">
-                              Order #{trackingId}
-                            </span>
+                            <span className="text-xs font-bold text-stone-900">অর্ডার #{trackingId}</span>
                             <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                              status === 'DELIVERED' || status === 'Delivered'
-                                ? 'bg-emerald-100 text-emerald-800'
-                                : status === 'CANCELLED'
-                                ? 'bg-rose-100 text-rose-800'
-                                : 'bg-amber-100 text-amber-800'
+                              tone === 'delivered' ? 'bg-emerald-100 text-emerald-800' : tone === 'cancelled' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
                             }`}>
-                              {status}
+                              {statusLabel(status)}
                             </span>
                           </div>
-                          <div className="flex items-center gap-4 text-xs text-stone-500">
-                            <span>Placed on: {date}</span>
-                            <span>Total: <strong className="text-stone-900">৳{amount.toLocaleString()}</strong></span>
-                            <span>Items: {order.items?.length || 1}</span>
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-stone-500">
+                            {date && <span>{date}</span>}
+                            <span>মোট <strong className="text-stone-900">৳{amount.toLocaleString()}</strong></span>
+                            <span>{pieces}টি পণ্য</span>
                           </div>
                         </div>
-
-                        <div className="flex items-center gap-2">
-                          {onOpenOrderTrack && (
-                            <button
-                              onClick={() => onOpenOrderTrack(trackingId)}
-                              className="px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer"
-                            >
-                              <Truck className="w-3.5 h-3.5 text-emerald-700" />
-                              <span>Live Track</span>
-                            </button>
-                          )}
-                        </div>
+                        {onOpenOrderTrack && (
+                          <button
+                            onClick={() => onOpenOrderTrack(trackingId)}
+                            className="px-3.5 py-2 rounded-xl bg-[#0A3828] hover:bg-[#072418] text-white text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <Truck className="w-3.5 h-3.5" />
+                            <span>ট্র্যাক করুন</span>
+                          </button>
+                        )}
                       </div>
                     );
                   })}
