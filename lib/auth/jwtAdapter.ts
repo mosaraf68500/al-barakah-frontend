@@ -1,4 +1,4 @@
-import { ApiError, apiFetch, getAccessToken, refreshAccessToken, setAccessToken } from '@/lib/api/http';
+import { ApiError, apiFetch, getAccessToken, refreshAccessToken, setAccessToken, setRefreshToken } from '@/lib/api/http';
 import type { AuthSession } from '@/types/auth';
 import { isStrongPassword } from '@/lib/validation/password';
 import { formatBdMobile, isValidBdMobile } from '@/lib/validation/phone';
@@ -44,6 +44,7 @@ function remembered(): AuthSession | null {
 
 function forget() {
   setAccessToken(null);
+  setRefreshToken(null);
   try {
     sessionStorage.removeItem(PROFILE_KEY);
   } catch {
@@ -76,11 +77,12 @@ export const jwtAdapter: AuthAdapter = {
     if (!isValidBdMobile(cleanPhone)) throw new Error('INVALID_BD_PHONE');
     if (!isStrongPassword(pin)) throw new Error('PIN_INVALID');
     try {
-      const res = await apiFetch<{ accessToken: string; user: ApiUser }>('/v1/auth/register', {
+      const res = await apiFetch<{ accessToken: string; refreshToken?: string; user: ApiUser }>('/v1/auth/register', {
         method: 'POST',
         body: JSON.stringify({ phone: cleanPhone, name: name.trim(), pin: pin.trim(), ...(address?.trim() ? { address: address.trim() } : {}) }),
       });
       setAccessToken(res.accessToken);
+      setRefreshToken(res.refreshToken ?? null);
       const session = toSession(res.user);
       remember(session);
       return session;
@@ -94,11 +96,12 @@ export const jwtAdapter: AuthAdapter = {
     if (!isValidBdMobile(cleanPhone)) throw new Error('INVALID_BD_PHONE');
     if (!pin.trim()) throw new Error('PIN_REQUIRED');
     try {
-      const res = await apiFetch<{ accessToken: string; user: ApiUser }>('/v1/auth/login', {
+      const res = await apiFetch<{ accessToken: string; refreshToken?: string; user: ApiUser }>('/v1/auth/login', {
         method: 'POST',
         body: JSON.stringify({ phone: cleanPhone, pin: pin.trim() }),
       });
       setAccessToken(res.accessToken);
+      setRefreshToken(res.refreshToken ?? null);
       const session = toSession(res.user);
       remember(session);
       return session;
@@ -111,7 +114,7 @@ export const jwtAdapter: AuthAdapter = {
     try {
       await apiFetch('/v1/auth/logout', { method: 'POST' });
     } catch {
-      /* cookie may already be gone */
+      /* session may already be gone */
     }
     forget();
   },
@@ -123,7 +126,7 @@ export const jwtAdapter: AuthAdapter = {
   },
 };
 
-/** Warm the access token from the refresh cookie when the tab still has a profile but the token was dropped. */
+/** Warm the access token from the stored refresh token when the tab still has a profile but the access token was dropped. */
 export async function restoreCustomerSession(): Promise<AuthSession | null> {
   if (!getAccessToken()) {
     const token = await refreshAccessToken();
