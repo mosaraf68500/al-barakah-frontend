@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 
-const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '947073184687-9303rtcuomi8it4t3nv0l6f75ndm3ofq.apps.googleusercontent.com';
 const SCRIPT = 'https://accounts.google.com/gsi/client';
 
 interface GoogleId {
