@@ -43,7 +43,7 @@ export interface AuthContextValue {
   closeAuthModal: () => void;
   clearSessionConflict: () => void;
 
-  signInWithGoogle: () => Promise<void>;
+  signInWithGoogle: (idToken: string) => Promise<void>;
   registerWithPhoneAndPassword: (phone: string, name: string, pin: string, address?: string) => Promise<void>;
   loginWithPhoneAndPassword: (phone: string, pin: string) => Promise<void>;
 

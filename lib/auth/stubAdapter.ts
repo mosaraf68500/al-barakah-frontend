@@ -66,7 +66,7 @@ export const stubAdapter: AuthAdapter = {
     }
   },
 
-  async signInWithGoogle() {
+  async signInWithGoogle(_idToken: string) {
     // TEMP: Phase 1 stub, replaced by real JWT auth in Phase 3. No Google OAuth happens; a sample customer is used.
     const name = 'Demo Customer';
     const email = 'demo.customer@example.com';

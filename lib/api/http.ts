@@ -99,7 +99,7 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}, retry = 
   }
 
   const res = await fetch(`${API_BASE}${path}`, { ...init, headers, credentials: 'include' });
-  if (res.status === 401 && retry && typeof window !== 'undefined' && !path.includes('/auth/login') && !path.includes('/auth/register') && !path.includes('/auth/refresh')) {
+  if (res.status === 401 && retry && typeof window !== 'undefined' && !path.includes('/auth/login') && !path.includes('/auth/register') && !path.includes('/auth/google') && !path.includes('/auth/refresh')) {
     const next = await refreshAccessToken();
     if (next) return apiFetch<T>(path, init, false);
   }

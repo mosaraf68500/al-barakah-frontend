@@ -65,10 +65,10 @@ export function AuthProvider({ children, adapter = jwtAdapter }: { children: Rea
       openAuthModal: () => setIsAuthModalOpen(true),
       closeAuthModal: () => setIsAuthModalOpen(false),
       clearSessionConflict: () => setSessionConflictMsg(null),
-      signInWithGoogle: async () => {
+      signInWithGoogle: async (idToken: string) => {
         setSessionConflictMsg(null);
         try {
-          apply(await adapter.signInWithGoogle());
+          apply(await adapter.signInWithGoogle(idToken));
           notify('গুগল দিয়ে লগইন হয়েছে।');
         } catch (err) {
           notify(err instanceof Error ? err.message : 'গুগল লগইন হয়নি।', 'error');

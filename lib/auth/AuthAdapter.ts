@@ -7,7 +7,7 @@ import type { AuthSession } from '@/types/auth';
 export interface AuthAdapter {
   /** Restore a previous session on page load (or null). */
   restoreSession(): AuthSession | null;
-  signInWithGoogle(): Promise<AuthSession>;
+  signInWithGoogle(idToken: string): Promise<AuthSession>;
   register(phone: string, name: string, pin: string, address?: string): Promise<AuthSession>;
   login(phone: string, pin: string): Promise<AuthSession>;
   signOut(): Promise<void>;

@@ -68,8 +68,22 @@ export const jwtAdapter: AuthAdapter = {
     return remembered();
   },
 
-  async signInWithGoogle() {
-    throw new Error('Google সাইন-ইন নেই। ফোন নম্বর ও পিন দিয়ে লগইন করুন।');
+  async signInWithGoogle(idToken) {
+    try {
+      const res = await apiFetch<{ accessToken: string; refreshToken?: string; user: ApiUser }>('/v1/auth/google', {
+        method: 'POST',
+        body: JSON.stringify({ idToken }),
+      });
+      setAccessToken(res.accessToken);
+      setRefreshToken(res.refreshToken ?? null);
+      const session = toSession(res.user);
+      remember(session);
+      return session;
+    } catch (err) {
+      if (err instanceof ApiError && err.code === 'GOOGLE_EMAIL_IS_ADMIN') throw new Error('This email is used by an administrator account');
+      if (err instanceof ApiError && (err.code === 'INVALID_GOOGLE_TOKEN' || err.code === 'GOOGLE_EMAIL_UNVERIFIED')) throw new Error('Google sign-in could not be verified.');
+      return authError(err);
+    }
   },
 
   async register(phone, name, pin, address) {
