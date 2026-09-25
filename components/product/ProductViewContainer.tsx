@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { Product } from '@/types';
 import { ProductView } from '@/components/product/ProductView';
 import { trackFbViewContent } from '@/lib/analytics/facebookPixel';
@@ -22,6 +22,7 @@ const currency = 'BDT' as const;
  */
 export function ProductViewContainer({ product: initialProduct, mode }: { product: Product; mode: 'modal' | 'page' }) {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const actions = useStorefrontActions();
   const allProducts = useProducts();
@@ -51,6 +52,12 @@ export function ProductViewContainer({ product: initialProduct, mode }: { produc
   }, []);
 
   const close = () => (mode === 'modal' ? router.back() : router.push('/'));
+
+  // A client-side leave from an intercepted product does not clear the @modal slot, so this overlay
+  // would stay on top of /track, /wishlist, /cart, and /login. The path is the source of truth.
+  // `/product/` is the same prefix as productHref(). A move to another product still matches, so the
+  // overlay stays up. The full-page route (mode "page") is the page itself and is not gated here.
+  if (mode === 'modal' && !pathname.startsWith('/product/')) return null;
 
   return (
     <ProductView
