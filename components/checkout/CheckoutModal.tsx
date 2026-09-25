@@ -270,6 +270,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       setOrderSuccess(saved);
       if (onOrderComplete) onOrderComplete(saved);
     } catch (err) {
+      if (err instanceof Error && err.message === 'LOGIN_REQUIRED') return;
       console.error(err);
       reject('অর্ডার সেভ হয়নি। আবার চেষ্টা করুন।');
     } finally {

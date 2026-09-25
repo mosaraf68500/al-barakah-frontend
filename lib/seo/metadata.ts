@@ -67,6 +67,7 @@ export function productMetadata(p: Product, settings: StoreSettings): Metadata {
 
 const STATIC_PAGES = {
   cart: { title: `Shopping Cart | ${BRAND}`, description: `Review your shopping bag and proceed to secure checkout on ${BRAND}.` },
+  checkout: { title: `Checkout | ${BRAND}`, description: `Sign in and complete your order on ${BRAND}.` },
   wishlist: { title: `My Wishlist | ${BRAND}`, description: `View your saved favorite perfumes and Islamic lifestyle products on ${BRAND}.` },
   track: { title: `Track Order | ${BRAND}`, description: `Track your parcel and delivery status in real-time with ${BRAND}.` },
   login: { title: `Sign In | ${BRAND}`, description: `Sign in or create your ${BRAND} customer account.` },

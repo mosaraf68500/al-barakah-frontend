@@ -4,12 +4,16 @@ import { useRouter } from 'next/navigation';
 import { CartView } from '@/components/cart/CartView';
 import { useSettings } from '@/hooks/useStoreData';
 import { useStorefrontActions } from '@/hooks/useStorefrontActions';
+import { CHECKOUT_PATH, CHECKOUT_SIGN_IN_MESSAGE } from '@/lib/auth/returnTo';
+import { notify } from '@/lib/ui/notify';
+import { useAuth } from '@/providers/AuthProvider';
 import { useCartStore } from '@/store/cartStore';
 import { useUiStore } from '@/store/uiStore';
 
 export function CartPage() {
   const router = useRouter();
   const actions = useStorefrontActions();
+  const { user, loading } = useAuth();
   const settings = useSettings();
   const items = useCartStore((s) => s.items);
   return (
@@ -20,6 +24,11 @@ export function CartPage() {
       onRemoveItem={actions.removeItem}
       onProceedCheckout={(discount, code) => {
         useUiStore.getState().setApplied(discount, code);
+        if (!loading && !user) {
+          notify(CHECKOUT_SIGN_IN_MESSAGE);
+          router.push(`/login?returnTo=${encodeURIComponent(CHECKOUT_PATH)}`);
+          return;
+        }
         useUiStore.getState().openCheckout(null);
       }}
       currency="BDT"

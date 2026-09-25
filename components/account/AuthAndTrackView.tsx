@@ -37,6 +37,8 @@ interface AuthAndTrackViewProps {
   currency: 'USD' | 'BDT';
   initialTrackingCode?: string;
   onOpenDashboard?: () => void;
+  /** Shown above the form, for example when checkout sent the customer here. */
+  notice?: string;
 }
 
 export const AuthAndTrackView: React.FC<AuthAndTrackViewProps> = ({
@@ -46,6 +48,7 @@ export const AuthAndTrackView: React.FC<AuthAndTrackViewProps> = ({
   currency,
   initialTrackingCode = '',
   onOpenDashboard,
+  notice,
 }) => {
   const { 
     user, 
@@ -187,6 +190,12 @@ export const AuthAndTrackView: React.FC<AuthAndTrackViewProps> = ({
     <div className="w-full min-h-[calc(100vh-80px)] bg-[#FAF8F5]/60 py-10 sm:py-16 px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-start animate-in fade-in duration-200">
       
       {/* Session Conflict Notification Banner */}
+      {notice && (
+        <div className="w-full max-w-[480px] mb-4 p-4 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 text-xs sm:text-sm shadow-sm">
+          <p className="leading-relaxed font-medium">{notice}</p>
+        </div>
+      )}
+
       {sessionConflictMsg && (
         <div className="w-full max-w-[480px] mb-4 p-4 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 text-xs sm:text-sm flex items-start justify-between gap-3 shadow-sm animate-in fade-in slide-in-from-top-2">
           <div className="flex items-start gap-2.5">
