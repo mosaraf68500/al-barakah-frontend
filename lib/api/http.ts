@@ -8,7 +8,8 @@
 const ACCESS_KEY = 'abp_customer_access';
 const REFRESH_KEY = 'abp_customer_refresh';
 
-export const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:4000';
+/** Trailing slash on the env value would produce `https://api.example.com//v1/...` and break CORS preflight. */
+export const API_BASE = (process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:4000').replace(/\/+$/, '');
 
 export class ApiError extends Error {
   constructor(message: string, public status: number, public code?: string) {

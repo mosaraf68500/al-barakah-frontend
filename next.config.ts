@@ -11,6 +11,15 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'api.dicebear.com' },
     ],
   },
+  async headers() {
+    return [
+      {
+        // Firebase Google popup needs to read window.closed on the opener.
+        source: '/:path*',
+        headers: [{ key: 'Cross-Origin-Opener-Policy', value: 'same-origin-allow-popups' }],
+      },
+    ];
+  },
 };
 
 export default nextConfig;
