@@ -15,8 +15,9 @@ export function AuthAndTrackPage({ initialTab }: { initialTab: 'LOGIN' | 'TRACK'
   const { user, loading } = useAuth();
 
   useEffect(() => {
-    if (!loading && user && returnTo) router.replace(returnTo);
-  }, [loading, user, returnTo, router]);
+    if (loading || !user || initialTab !== 'LOGIN') return;
+    router.replace(returnTo || '/account');
+  }, [loading, user, returnTo, router, initialTab]);
 
   return (
     <AuthAndTrackView

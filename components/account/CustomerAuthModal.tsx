@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { 
   X, 
   Search, 
@@ -31,6 +32,7 @@ interface CustomerAuthModalProps {
 }
 
 export const CustomerAuthModal: React.FC<CustomerAuthModalProps> = ({ onOpenOrderTrack }) => {
+  const router = useRouter();
   const { 
     isAuthModalOpen, 
     closeAuthModal, 
@@ -55,6 +57,11 @@ export const CustomerAuthModal: React.FC<CustomerAuthModalProps> = ({ onOpenOrde
   const [trackingInput, setTrackingInput] = useState('');
 
   if (!isAuthModalOpen) return null;
+
+  const goAfterLogin = () => {
+    closeAuthModal();
+    router.push('/account');
+  };
 
   const fail = (msg: string) => {
     setErrorMsg(msg);
@@ -94,7 +101,7 @@ export const CustomerAuthModal: React.FC<CustomerAuthModalProps> = ({ onOpenOrde
         await loginWithPhoneAndPassword(cleanPhone, pin.trim());
         notify(AUTH_COPY.loginOk);
       }
-      closeAuthModal();
+      goAfterLogin();
     } catch (err: any) {
       const code = err?.message as string | undefined;
       if (code === 'ACCOUNT_ALREADY_EXISTS') setPhoneAuthMode('LOGIN');
@@ -402,7 +409,18 @@ export const CustomerAuthModal: React.FC<CustomerAuthModalProps> = ({ onOpenOrde
                 </div>
 
                 {/* SIGN IN WITH GOOGLE Button */}
-                <ContinueWithGoogle onCredential={(idToken) => { void signInWithGoogle(idToken); }} />
+                <ContinueWithGoogle
+                  onCredential={(idToken) => {
+                    void (async () => {
+                      try {
+                        await signInWithGoogle(idToken);
+                        goAfterLogin();
+                      } catch {
+                        /* AuthProvider already showed the error toast */
+                      }
+                    })();
+                  }}
+                />
               </form>
             </div>
           ) : (

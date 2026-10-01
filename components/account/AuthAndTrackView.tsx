@@ -411,7 +411,18 @@ export const AuthAndTrackView: React.FC<AuthAndTrackViewProps> = ({
                 <>
                   {/* Google / Gmail Instant 1-Click Login Button */}
                   <div>
-                    <ContinueWithGoogle onCredential={(idToken) => { void signInWithGoogle(idToken); }} />
+                    <ContinueWithGoogle
+                      onCredential={(idToken) => {
+                        void (async () => {
+                          try {
+                            await signInWithGoogle(idToken);
+                            onOpenDashboard?.();
+                          } catch {
+                            /* AuthProvider already showed the error toast */
+                          }
+                        })();
+                      }}
+                    />
                     <p className="text-[11px] text-stone-400 text-center mt-1.5">
                       🔒 জিমেইল ব্যবহারকারীদের জন্য Google অফিসিয়াল ভেরিফিকেশন প্রযোজ্য
                     </p>

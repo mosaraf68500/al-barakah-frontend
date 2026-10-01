@@ -1,81 +1,72 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useState } from 'react';
+import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
+import { getFirebaseAuth } from '@/lib/firebase/client';
 
-const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '947073184687-9303rtcuomi8it4t3nv0l6f75ndm3ofq.apps.googleusercontent.com';
-const SCRIPT = 'https://accounts.google.com/gsi/client';
-
-interface GoogleId {
-  initialize: (config: { client_id: string; callback: (response: { credential?: string }) => void; auto_select?: boolean }) => void;
-  renderButton: (parent: HTMLElement, options: Record<string, string | number>) => void;
-}
-
-declare global {
-  interface Window {
-    google?: { accounts: { id: GoogleId } };
-  }
-}
-
-let scriptPromise: Promise<void> | undefined;
-
-function loadGis(): Promise<void> {
-  if (window.google?.accounts?.id) return Promise.resolve();
-  if (!scriptPromise) {
-    scriptPromise = new Promise((resolve, reject) => {
-      const existing = document.querySelector<HTMLScriptElement>(`script[src="${SCRIPT}"]`);
-      const script = existing ?? document.createElement('script');
-      script.src = SCRIPT;
-      script.async = true;
-      script.onload = () => resolve();
-      script.onerror = () => reject(new Error('Google sign-in failed to load'));
-      if (!existing) document.head.appendChild(script);
-      else if (window.google?.accounts?.id) resolve();
-    });
-  }
-  return scriptPromise;
-}
-
-/** Official Google Identity Services button. The credential is an ID token for POST /v1/auth/google. */
+/**
+ * Firebase Auth Google popup. Returns a Firebase ID token for POST /v1/auth/google.
+ * The Firebase client session is cleared afterward — the storefront uses our JWT.
+ */
 export function ContinueWithGoogle({ onCredential }: { onCredential: (idToken: string) => void }) {
-  const host = useRef<HTMLDivElement>(null);
-  const onCredentialRef = useRef(onCredential);
-  onCredentialRef.current = onCredential;
+  const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    if (!CLIENT_ID || !host.current) return;
-    let cancelled = false;
-    loadGis()
-      .then(() => {
-        const el = host.current;
-        const gis = window.google?.accounts?.id;
-        if (cancelled || !el || !gis || !CLIENT_ID) return;
-        gis.initialize({
-          client_id: CLIENT_ID,
-          auto_select: false,
-          callback: (response) => {
-            if (response.credential) onCredentialRef.current(response.credential);
-          },
-        });
-        el.replaceChildren();
-        const width = Math.max(240, Math.min(400, el.clientWidth || 320));
-        gis.renderButton(el, {
-          type: 'standard',
-          theme: 'outline',
-          size: 'large',
-          text: 'continue_with',
-          shape: 'rectangular',
-          logo_alignment: 'left',
-          width,
-        });
-      })
-      .catch(() => {
-        /* the phone form stays usable */
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const handleClick = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const auth = getFirebaseAuth();
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      const result = await signInWithPopup(auth, provider);
+      const idToken = await result.user.getIdToken();
+      try {
+        await signOut(auth);
+      } catch {
+        /* JWT path still works even if Firebase sign-out fails */
+      }
+      onCredential(idToken);
+    } catch (err) {
+      const code = (err as { code?: string }).code;
+      if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') return;
+      if (code === 'auth/configuration-not-found') {
+        console.error(
+          'Google sign-in failed: enable the Google provider in Firebase Console → Authentication → Sign-in method.',
+          err,
+        );
+        window.alert(
+          'Firebase-এ Google login এখনো চালু নেই।\n\nFirebase Console → Authentication → Sign-in method → Google → Enable করুন।',
+        );
+        return;
+      }
+      console.error('Google sign-in failed', err);
+    } finally {
+      setBusy(false);
+    }
+  };
 
-  if (!CLIENT_ID) return null;
-  return <div ref={host} className="w-full min-h-11 flex justify-center" />;
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        void handleClick();
+      }}
+      disabled={busy}
+      className="w-full min-h-11 flex items-center justify-center gap-3 rounded-xl border border-stone-300 bg-white px-4 text-sm font-semibold text-stone-700 shadow-sm transition hover:bg-stone-50 disabled:opacity-60"
+    >
+      <GoogleMark />
+      <span>{busy ? 'Connecting…' : 'Continue with Google'}</span>
+    </button>
+  );
+}
+
+function GoogleMark() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+    </svg>
+  );
 }

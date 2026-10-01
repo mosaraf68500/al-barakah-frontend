@@ -72,6 +72,7 @@ export function AuthProvider({ children, adapter = jwtAdapter }: { children: Rea
           notify('গুগল দিয়ে লগইন হয়েছে।');
         } catch (err) {
           notify(err instanceof Error ? err.message : 'গুগল লগইন হয়নি।', 'error');
+          throw err;
         }
       },
       registerWithPhoneAndPassword: async (phone, name, pin, address) => {
