@@ -125,6 +125,8 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
                   draggable={false}
                   onContextMenu={(e) => e.preventDefault()}
                   referrerPolicy="no-referrer"
+                  priority={slide.id === activeSlides[0]?.id}
+                  sizes="(max-width: 1024px) 100vw, 67vw"
                 />
                 {/* Level 1: Transparent Shield Layer over Slide */}
                 <div 
@@ -204,6 +206,8 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
                 draggable={false}
                 onContextMenu={(e) => e.preventDefault()}
                 referrerPolicy="no-referrer"
+                priority
+                sizes="33vw"
               />
               {/* Level 1: Transparent Shield Layer over Promo Card */}
               <div 

@@ -1,23 +1,35 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { CheckoutModal } from '@/components/checkout/CheckoutModal';
-import { CustomerAuthModal } from '@/components/account/CustomerAuthModal';
-import { CartItem } from '@/types';
+import type { CartItem } from '@/types';
 import { CompareFloatingBar } from '@/components/product/CompareFloatingBar';
-import { CompareModal } from '@/components/product/CompareModal';
 import { FloatingCartWidget } from '@/components/cart/FloatingCartWidget';
 import { FloatingWhatsAppButton } from '@/components/layout/FloatingWhatsAppButton';
-import { PolicyModal } from '@/components/layout/PolicyModal';
 import { trackFbInitiateCheckout } from '@/lib/analytics/facebookPixel';
 import { useProducts, useSettings } from '@/hooks/useStoreData';
 import { useStorefrontActions } from '@/hooks/useStorefrontActions';
+import { useAuth } from '@/providers/AuthProvider';
 import { useCartStore } from '@/store/cartStore';
 import { useCompareStore } from '@/store/compareStore';
 import { useUiStore } from '@/store/uiStore';
 
 const currency = 'BDT' as const;
+
+/** Heavy overlays — code-split so the first homepage paint does not download checkout/auth/compare JS. */
+const CompareModal = dynamic(() => import('@/components/product/CompareModal').then((m) => m.CompareModal), {
+  ssr: false,
+});
+const PolicyModal = dynamic(() => import('@/components/layout/PolicyModal').then((m) => m.PolicyModal), {
+  ssr: false,
+});
+const CheckoutModal = dynamic(() => import('@/components/checkout/CheckoutModal').then((m) => m.CheckoutModal), {
+  ssr: false,
+});
+const CustomerAuthModal = dynamic(() => import('@/components/account/CustomerAuthModal').then((m) => m.CustomerAuthModal), {
+  ssr: false,
+});
 
 /* The overlays / floating widgets legacy `App.tsx` mounted at the bottom of its tree, wired to the stores. */
 
@@ -27,6 +39,7 @@ export function CompareHost() {
   const compareProducts = useCompareStore((s) => s.items);
   const isOpen = useUiStore((s) => s.isCompareOpen);
   const setOpen = useUiStore((s) => s.setCompareOpen);
+  if (!isOpen) return null;
   return (
     <CompareModal
       isOpen={isOpen}
@@ -53,6 +66,7 @@ export function CompareHost() {
 export function PolicyHost() {
   const isOpen = useUiStore((s) => s.isPolicyOpen);
   const setOpen = useUiStore((s) => s.setPolicyOpen);
+  if (!isOpen) return null;
   return <PolicyModal isOpen={isOpen} onClose={() => setOpen(false)} />;
 }
 
@@ -72,6 +86,8 @@ export function CheckoutHost() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isCheckoutOpen, quickBuyItem]);
 
+  if (!isCheckoutOpen) return null;
+
   return (
     <CheckoutModal
       isOpen={isCheckoutOpen}
@@ -90,7 +106,9 @@ export function CheckoutHost() {
 
 export function CustomerAuthHost() {
   const router = useRouter();
+  const { isAuthModalOpen } = useAuth();
   // BUG_FIXES.md #6: legacy dropped the typed tracking code; it is now carried to /track?code=
+  if (!isAuthModalOpen) return null;
   return <CustomerAuthModal onOpenOrderTrack={(code) => router.push(`/track?code=${encodeURIComponent(code)}`)} />;
 }
 

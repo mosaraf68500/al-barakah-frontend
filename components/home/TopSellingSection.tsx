@@ -5,7 +5,6 @@ import { SafeImage } from '@/components/shared/SafeImage';
 import { Flame, ShoppingCart, Check, ArrowLeftRight } from 'lucide-react';
 import { Product } from '@/types';
 import { TopSellingSectionConfig, TopSellingItem, DEFAULT_TOP_SELLING_CONFIG } from '@/types/topSelling';
-import { INITIAL_PRODUCTS } from '@/lib/constants/initialProducts';
 
 interface TopSellingSectionProps {
   config?: TopSellingSectionConfig;
@@ -154,9 +153,11 @@ export const TopSellingSection: React.FC<TopSellingSectionProps> = ({
           const currentPrice = Number(resolvedProduct.price || 0);
           const origPrice = Number(resolvedProduct.originalPrice || currentPrice);
           const discountAmount = origPrice > currentPrice ? origPrice - currentPrice : 0;
-          const badgeText = item.badge || item.badgeText || resolvedProduct.badge || '';
+          // Prefer badgeText (what the admin editor writes); fall back to legacy `badge`.
+          const badgeText = item.badgeText || item.badge || resolvedProduct.badge || '';
           const isAdded = Boolean(addedItems[item.id]);
           const isCompared = compareProducts.some((p) => p.id === resolvedProduct.id);
+          const weightLabel = (item.overrideWeight || resolvedProduct.weight || '').trim();
 
           const isOutOfStock = !resolvedProduct.inStock || (resolvedProduct.stockCount !== undefined && resolvedProduct.stockCount <= 0);
 
@@ -238,6 +239,9 @@ export const TopSellingSection: React.FC<TopSellingSectionProps> = ({
                   <h3 className="text-xs sm:text-sm font-bold text-stone-900 line-clamp-1 leading-snug group-hover:text-[#f38018] transition-colors">
                     {resolvedProduct.name}
                   </h3>
+                  {weightLabel ? (
+                    <p className="mt-0.5 text-[10px] sm:text-[11px] font-medium text-stone-500">{weightLabel}</p>
+                  ) : null}
 
                   <div className="mt-1 flex items-baseline gap-1.5 font-bengali flex-wrap">
                     <span className="text-sm sm:text-base md:text-lg font-black text-[#f38018] tracking-tight">

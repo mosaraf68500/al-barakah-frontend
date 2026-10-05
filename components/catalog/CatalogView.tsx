@@ -1,5 +1,6 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowUpDown, ShoppingBag } from 'lucide-react';
@@ -14,10 +15,17 @@ import { useWishlistStore } from '@/store/wishlistStore';
 import { useUiStore } from '@/store/uiStore';
 import { DEFAULT_HERO_CONFIG } from '@/lib/constants/heroDefaults';
 import { DEFAULT_TOP_SELLING_CONFIG } from '@/types/topSelling';
-import { HeroBanner } from '@/components/home/HeroBanner';
-import { CategorySlider } from '@/components/home/CategorySlider';
-import { TopSellingSection } from '@/components/home/TopSellingSection';
 import { ProductCard } from '@/components/product/ProductCard';
+
+const HeroBanner = dynamic(() => import('@/components/home/HeroBanner').then((m) => m.HeroBanner), {
+  loading: () => <div className="w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-2 pb-2"><div className="w-full h-48 sm:h-72 rounded-2xl bg-stone-200 animate-pulse" /></div>,
+});
+const CategorySlider = dynamic(() => import('@/components/home/CategorySlider').then((m) => m.CategorySlider), {
+  loading: () => <div className="h-28 max-w-7xl mx-auto px-3 animate-pulse bg-stone-100 rounded-xl my-4" />,
+});
+const TopSellingSection = dynamic(() => import('@/components/home/TopSellingSection').then((m) => m.TopSellingSection), {
+  loading: () => <div className="h-64 max-w-7xl mx-auto px-3 animate-pulse bg-stone-100 rounded-xl my-4" />,
+});
 
 const currency = 'BDT' as const; // legacy: setCurrency is never called, currency is always BDT
 

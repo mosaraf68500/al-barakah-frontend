@@ -1,5 +1,6 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useEffect, useState, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { CategoryItem, Product, ProductReview, StoreSettings } from '@/types';
@@ -9,7 +10,9 @@ import { useCompareStore } from '@/store/compareStore';
 import { useWishlistStore } from '@/store/wishlistStore';
 import { markClientStoresHydrated } from '@/store/clientHydration';
 import { AuthProvider } from './AuthProvider';
-import { WishlistSync } from './WishlistSync';
+
+/** Wishlist↔API sync is idle-path work — keep it out of the critical provider chunk. */
+const WishlistSync = dynamic(() => import('./WishlistSync').then((m) => m.WishlistSync), { ssr: false });
 
 export interface InitialStoreData {
   products: Product[];
@@ -18,7 +21,6 @@ export interface InitialStoreData {
   reviews: ProductReview[];
 }
 
-// Legacy `App.tsx` deleted these stale business-data keys from every visitor's browser on load.
 const LEGACY_KEYS = [
   'albarakah_premium_products',
   'albarakah_premium_categories',

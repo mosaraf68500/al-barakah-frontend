@@ -1,10 +1,15 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+  // Tree-shake barrel imports (lucide icons, motion) into per-module chunks.
+  experimental: {
+    optimizePackageImports: ['lucide-react', 'motion'],
+  },
   images: {
-    // Decision 7: allow-list the image hosts referenced by the data (Unsplash, Google/Firebase-hosted assets, avatars).
+    // Decision 7: allow-list the image hosts referenced by the data (Unsplash, Cloudinary, Google/Firebase-hosted assets, avatars).
     remotePatterns: [
       { protocol: 'https', hostname: 'images.unsplash.com' },
+      { protocol: 'https', hostname: 'res.cloudinary.com' },
       { protocol: 'https', hostname: 'firebasestorage.googleapis.com' },
       { protocol: 'https', hostname: '**.firebasestorage.app' },
       { protocol: 'https', hostname: 'lh3.googleusercontent.com' },

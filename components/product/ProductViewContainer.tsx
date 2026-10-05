@@ -1,9 +1,9 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useEffect } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { Product } from '@/types';
-import { ProductView } from '@/components/product/ProductView';
 import { trackFbViewContent } from '@/lib/analytics/facebookPixel';
 import { useCategories, useProducts, useReviews, useSettings } from '@/hooks/useStoreData';
 import { useStorefrontActions } from '@/hooks/useStorefrontActions';
@@ -11,6 +11,14 @@ import { useCartStore } from '@/store/cartStore';
 import { useCompareStore } from '@/store/compareStore';
 import { useUiStore } from '@/store/uiStore';
 import { useWishlistStore } from '@/store/wishlistStore';
+
+const ProductView = dynamic(() => import('@/components/product/ProductView').then((m) => m.ProductView), {
+  loading: () => (
+    <div className="fixed inset-0 z-[70] bg-white/80 backdrop-blur-sm flex items-center justify-center">
+      <div className="w-10 h-10 rounded-full border-2 border-amber-500 border-t-transparent animate-spin" />
+    </div>
+  ),
+});
 
 const currency = 'BDT' as const;
 

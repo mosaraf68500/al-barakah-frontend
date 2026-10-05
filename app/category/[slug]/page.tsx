@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { CatalogView } from '@/components/catalog/CatalogView';
+import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
 import { getCategoryBySlug, getSettings } from '@/lib/api';
 import { categoryMetadata } from '@/lib/seo/metadata';
 
@@ -19,7 +20,7 @@ export default async function CategoryPage({ params }: Params) {
   const cat = await getCategoryBySlug(slug);
   if (!cat || cat.enabled === false) notFound();
   return (
-    <Suspense>
+    <Suspense fallback={<LoadingSkeleton />}>
       <CatalogView categoryName={cat.name} />
     </Suspense>
   );
