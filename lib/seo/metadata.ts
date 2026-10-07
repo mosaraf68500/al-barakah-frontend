@@ -27,13 +27,14 @@ function build(o: { title: string; description: string; keywords?: string; image
     alternates: { canonical: o.path },
     robots: o.noindex ? { index: false, follow: true } : undefined,
     openGraph: { title: o.title, description: o.description, url: o.path, siteName: o.siteName, type: o.type ?? 'website', images: o.image ? [{ url: o.image }] : undefined },
-    twitter: { card: 'summary_large_image', title: o.title, description: o.description, images: o.image ? [o.image] : undefined, site: o.twitter },
+    twitter: { card: o.image ? 'summary_large_image' : 'summary', title: o.title, description: o.description, images: o.image ? [o.image] : undefined, site: o.twitter },
   };
 }
 
+/** Homepage share preview: title/description only — no og:image (Messenger/FB show link without photo). */
 export function homeMetadata(settings: StoreSettings): Metadata {
   const b = base(settings.seoConfig);
-  return build({ title: b.title, description: b.description, keywords: b.keywords, image: b.image, path: '/', siteName: b.siteName, twitter: settings.seoConfig.twitterHandle });
+  return build({ title: b.title, description: b.description, keywords: b.keywords, path: '/', siteName: b.siteName, twitter: settings.seoConfig.twitterHandle });
 }
 
 export function categoryMetadata(cat: CategoryItem, settings: StoreSettings): Metadata {

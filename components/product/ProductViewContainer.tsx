@@ -44,7 +44,16 @@ export function ProductViewContainer({ product: initialProduct, mode }: { produc
   const setPolicyOpen = useUiStore((s) => s.setPolicyOpen);
 
   // Prefer the live copy (rating/reviewCount change after a review) over the server-rendered prop.
-  const product = allProducts.find((p) => p.id === initialProduct.id) ?? initialProduct;
+  // Catalog list omits description/landingPage — keep those from the detail payload.
+  const live = allProducts.find((p) => p.id === initialProduct.id);
+  const product = live
+    ? {
+        ...initialProduct,
+        ...live,
+        description: live.description || initialProduct.description,
+        landingPage: live.landingPage ?? initialProduct.landingPage,
+      }
+    : initialProduct;
 
   useEffect(() => {
     trackFbViewContent(product, currency);
