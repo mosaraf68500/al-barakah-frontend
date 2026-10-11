@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic';
 import { useEffect } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { Product } from '@/types';
+import { GTMProductTracker } from '@/components/gtm/GTMProductTracker';
 import { trackFbViewContent } from '@/lib/analytics/facebookPixel';
 import { useCategories, useProducts, useReviews, useSettings } from '@/hooks/useStoreData';
 import { useStorefrontActions } from '@/hooks/useStorefrontActions';
@@ -77,32 +78,40 @@ export function ProductViewContainer({ product: initialProduct, mode }: { produc
   if (mode === 'modal' && !pathname.startsWith('/product/')) return null;
 
   return (
-    <ProductView
-      product={product}
-      onClose={close}
-      currency={currency}
-      isWishlisted={wishlist.some((p) => p.id === product.id)}
-      onToggleWishlist={actions.toggleWishlist}
-      isCompared={compareProducts.some((p) => p.id === product.id)}
-      onToggleCompare={actions.toggleCompare}
-      onAddToCart={actions.addToCart}
-      onBuyNow={actions.buyNow}
-      allProducts={allProducts}
-      onSelectProduct={actions.openProduct}
-      onOpenPolicy={() => setPolicyOpen(true)}
-      cartCount={cartCount}
-      wishlistCount={wishlist.length}
-      compareCount={compareProducts.length}
-      onOpenCart={() => router.push('/cart')}
-      onOpenWishlist={() => router.push('/wishlist')}
-      onOpenCompare={() => setCompareOpen(true)}
-      onOpenOrders={() => router.push('/track')}
-      onOpenCustomerDashboard={() => router.push('/account')}
-      onOpenAuth={(tab) => router.push(tab === 'TRACK' ? '/track' : '/login')}
-      categories={categories}
-      enableCustomerReviews={settings.enableCustomerReviews}
-      reviews={reviews}
-      onAddReview={actions.addReview}
-    />
+    <>
+      <GTMProductTracker
+        itemId={product.id}
+        itemName={product.name}
+        price={product.price}
+        originalPrice={product.originalPrice}
+      />
+      <ProductView
+        product={product}
+        onClose={close}
+        currency={currency}
+        isWishlisted={wishlist.some((p) => p.id === product.id)}
+        onToggleWishlist={actions.toggleWishlist}
+        isCompared={compareProducts.some((p) => p.id === product.id)}
+        onToggleCompare={actions.toggleCompare}
+        onAddToCart={actions.addToCart}
+        onBuyNow={actions.buyNow}
+        allProducts={allProducts}
+        onSelectProduct={actions.openProduct}
+        onOpenPolicy={() => setPolicyOpen(true)}
+        cartCount={cartCount}
+        wishlistCount={wishlist.length}
+        compareCount={compareProducts.length}
+        onOpenCart={() => router.push('/cart')}
+        onOpenWishlist={() => router.push('/wishlist')}
+        onOpenCompare={() => setCompareOpen(true)}
+        onOpenOrders={() => router.push('/track')}
+        onOpenCustomerDashboard={() => router.push('/account')}
+        onOpenAuth={(tab) => router.push(tab === 'TRACK' ? '/track' : '/login')}
+        categories={categories}
+        enableCustomerReviews={settings.enableCustomerReviews}
+        reviews={reviews}
+        onAddReview={actions.addReview}
+      />
+    </>
   );
 }

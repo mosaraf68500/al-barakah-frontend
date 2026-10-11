@@ -8,6 +8,7 @@ import { CompareFloatingBar } from '@/components/product/CompareFloatingBar';
 import { FloatingCartWidget } from '@/components/cart/FloatingCartWidget';
 import { FloatingWhatsAppButton } from '@/components/layout/FloatingWhatsAppButton';
 import { trackFbInitiateCheckout } from '@/lib/analytics/facebookPixel';
+import { trackBeginCheckout } from '@/lib/gtm';
 import { useProducts, useSettings } from '@/hooks/useStoreData';
 import { useStorefrontActions } from '@/hooks/useStorefrontActions';
 import { useAuth } from '@/providers/AuthProvider';
@@ -80,8 +81,33 @@ export function CheckoutHost() {
   // Legacy: InitiateCheckout fires when checkout opens with items.
   useEffect(() => {
     if (isCheckoutOpen && items.length > 0) {
-      const subtotal = items.reduce((sum, item) => sum + (item.customPrice ?? item.product.price) * item.quantity, 0);
-      trackFbInitiateCheckout(items, Math.max(0, subtotal - appliedDiscount), currency);
+      const gtmItems = items.map((item, index) => {
+        const unitPrice = item.customPrice ?? item.product.price;
+        const original = item.product.originalPrice;
+        const discount =
+          original !== undefined && original > unitPrice
+            ? Number((original - unitPrice).toFixed(2))
+            : undefined;
+        return {
+          item_id: item.product.id,
+          item_name: item.product.name,
+          price: unitPrice,
+          quantity: item.quantity,
+          index,
+          ...(discount !== undefined ? { discount } : {}),
+        };
+      });
+      const value = Math.max(
+        0,
+        gtmItems.reduce((sum, item) => sum + item.price * item.quantity, 0) - appliedDiscount,
+      );
+
+      trackFbInitiateCheckout(items, value, currency);
+      trackBeginCheckout({
+        value,
+        items: gtmItems,
+        ...(appliedCoupon ? { coupon: appliedCoupon } : {}),
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isCheckoutOpen, quickBuyItem]);

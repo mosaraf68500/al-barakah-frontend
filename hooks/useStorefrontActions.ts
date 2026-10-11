@@ -10,6 +10,7 @@ import { useAuth } from '@/providers/AuthProvider';
 import { CHECKOUT_PATH, CHECKOUT_SIGN_IN_MESSAGE } from '@/lib/auth/returnTo';
 import { productHref } from '@/lib/catalog/urls';
 import { trackFbAddToCart, trackFbPurchase } from '@/lib/analytics/facebookPixel';
+import { trackAddToCart, trackPurchase } from '@/lib/gtm';
 import { queryKeys } from '@/hooks/useStoreData';
 import { useCartStore } from '@/store/cartStore';
 import { useCompareStore } from '@/store/compareStore';
@@ -29,7 +30,22 @@ export function useStorefrontActions() {
   return useMemo(() => {
     const addToCart = (product: Product, quantity = 1, color?: string, size?: string, customPrice?: number) => {
       useCartStore.getState().add(product, quantity, color, size, customPrice);
-      trackFbAddToCart(product, quantity, customPrice || product.price, 'BDT');
+      const unitPrice = customPrice || product.price;
+      trackFbAddToCart(product, quantity, unitPrice, 'BDT');
+      trackAddToCart({
+        value: unitPrice * quantity,
+        items: [
+          {
+            item_id: product.id,
+            item_name: product.name,
+            price: unitPrice,
+            quantity,
+            ...(product.originalPrice !== undefined && product.originalPrice > unitPrice
+              ? { discount: Number((product.originalPrice - unitPrice).toFixed(2)) }
+              : {}),
+          },
+        ],
+      });
       notify(`"${product.name.slice(0, 28)}" কার্টে যোগ হয়েছে।`);
     };
 
@@ -118,6 +134,27 @@ export function useStorefrontActions() {
       useUiStore.setState({ quickBuyItem: null });
 
       trackFbPurchase(saved as any);
+
+      if (saved.items?.length) {
+        const gtmItems = saved.items.map((item, index) => ({
+          item_id: String(item.productId || item.id || ''),
+          item_name: String(item.productNameSnapshot || item.name || ''),
+          price: Number(item.unitPriceSnapshot ?? item.price ?? 0),
+          quantity: Number(item.quantity ?? 1),
+          index,
+        }));
+
+        trackPurchase({
+          transaction_id: saved.id,
+          value: saved.totalAmount ?? saved.total ?? 0,
+          currency: 'BDT',
+          shipping: saved.deliveryFee ?? saved.shipping ?? 0,
+          tax: 0,
+          items: gtmItems,
+          ...(saved.couponCode ? { coupon: saved.couponCode } : {}),
+        });
+      }
+
       notify(`অর্ডার ${saved.id} সফলভাবে নিশ্চিত হয়েছে।`);
       return saved;
     };
