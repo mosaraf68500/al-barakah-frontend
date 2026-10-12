@@ -99,14 +99,19 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}, retry = 
     if (refreshToken) headers.set('X-Abp-Refresh', refreshToken);
   }
 
+  const isGet = !init.method || init.method.toUpperCase() === 'GET';
+  // Caller may pass `cache` / `next` (e.g. settings) to override the default public GET TTL.
+  const callerSetCache = init.cache !== undefined || (init as { next?: unknown }).next !== undefined;
   const res = await fetch(`${API_BASE}${path}`, {
     ...init,
     headers,
     credentials: 'include',
     // Server Components / RSC: cache public GETs for 60s (matches layout revalidate). Browser calls stay uncached.
-    ...(typeof window === 'undefined' && (!init.method || init.method.toUpperCase() === 'GET') && !token
-      ? { next: { revalidate: 60 } }
-      : { cache: 'no-store' as RequestCache }),
+    ...(callerSetCache
+      ? {}
+      : typeof window === 'undefined' && isGet && !token
+        ? { next: { revalidate: 60 } }
+        : { cache: 'no-store' as RequestCache }),
   });
   if (res.status === 401 && retry && typeof window !== 'undefined' && !path.includes('/auth/login') && !path.includes('/auth/register') && !path.includes('/auth/google') && !path.includes('/auth/refresh')) {
     const next = await refreshAccessToken();

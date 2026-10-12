@@ -5,6 +5,11 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react', 'motion'],
   },
+  // Smaller prod JS; keep warn/error for real issues.
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
+  },
+  poweredByHeader: false,
   images: {
     // Decision 7: allow-list the image hosts referenced by the data (Unsplash, Cloudinary, Google/Firebase-hosted assets, avatars).
     remotePatterns: [

@@ -21,8 +21,14 @@ export function useProducts(): Product[] {
 export function useCategories(): CategoryItem[] {
   return useQuery({ queryKey: queryKeys.categories, queryFn: getCategories, ...opts }).data ?? [];
 }
+/** Admin toggles: refetch on focus; short staleTime avoids hammering the API every mount. */
 export function useSettings(): StoreSettings {
-  return useQuery({ queryKey: queryKeys.settings, queryFn: getSettings, ...opts }).data as StoreSettings;
+  return useQuery({
+    queryKey: queryKeys.settings,
+    queryFn: getSettings,
+    staleTime: 15_000,
+    refetchOnWindowFocus: true,
+  }).data as StoreSettings;
 }
 export function useReviews(): ProductReview[] {
   return useQuery({ queryKey: queryKeys.reviews, queryFn: () => getReviews(), ...opts }).data ?? [];

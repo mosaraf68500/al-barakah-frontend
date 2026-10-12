@@ -32,21 +32,19 @@ export default function RootLayout({ children, modal }: { children: ReactNode; m
   return (
     <html lang="en" className="h-full">
       <head>
-        {/* Google Tag Manager — as high in <head> as possible */}
-        <Script id="gtm" strategy="afterInteractive">{`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+        {/* Analytics deferred to lazyOnload so first paint / LCP is not blocked (same tags, later load). */}
+        <Script id="gtm" strategy="lazyOnload">{`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
 j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
 })(window,document,'script','dataLayer','GTM-KCL5PZDB');`}</Script>
-        {/* Google tag (gtag.js) — GA4 */}
-        <Script async src="https://www.googletagmanager.com/gtag/js?id=G-5HF48X3DP3" strategy="afterInteractive" />
-        <Script id="ga4-config" strategy="afterInteractive">{`
+        <Script async src="https://www.googletagmanager.com/gtag/js?id=G-5HF48X3DP3" strategy="lazyOnload" />
+        <Script id="ga4-config" strategy="lazyOnload">{`
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
   gtag('config', 'G-5HF48X3DP3');
 `}</Script>
-        {/* Meta Pixel — deferred so it does not compete with LCP */}
         <Script id="meta-pixel" strategy="lazyOnload">{`
 !function(f,b,e,v,n,t,s)
 {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
