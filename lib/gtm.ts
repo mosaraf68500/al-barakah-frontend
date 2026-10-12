@@ -37,6 +37,14 @@ export interface BeginCheckoutPayload {
   coupon?: string;
 }
 
+/** Non-sensitive order contact fields for analytics match (no passwords/tokens). */
+export interface GtmUserData {
+  name?: string;
+  phone?: string;
+  address?: string;
+  timestamp?: string;
+}
+
 export interface PurchasePayload {
   transaction_id: string;
   value: number;
@@ -45,13 +53,15 @@ export interface PurchasePayload {
   shipping: number;
   items: GtmItem[];
   coupon?: string;
+  /** Sibling to `ecommerce` on the dataLayer push — not nested inside GA4 ecommerce. */
+  user_data?: GtmUserData;
 }
 
 type DataLayerEvent =
   | { event: 'view_item'; ecommerce: ViewItemPayload }
   | { event: 'add_to_cart'; ecommerce: AddToCartPayload }
   | { event: 'begin_checkout'; ecommerce: BeginCheckoutPayload }
-  | { event: 'purchase'; ecommerce: PurchasePayload };
+  | { event: 'purchase'; ecommerce: Omit<PurchasePayload, 'user_data'>; user_data?: GtmUserData };
 
 declare global {
   interface Window {
@@ -88,7 +98,12 @@ export function trackBeginCheckout(payload: BeginCheckoutPayload): void {
   pushToDataLayer({ event: 'begin_checkout', ecommerce: withCurrency(payload) });
 }
 
-/** GA4 `purchase` — requires transaction_id, value, tax, shipping, items. */
+/** GA4 `purchase` — requires transaction_id, value, tax, shipping, items. Optional `user_data` is pushed beside ecommerce. */
 export function trackPurchase(payload: PurchasePayload): void {
-  pushToDataLayer({ event: 'purchase', ecommerce: withCurrency(payload) });
+  const { user_data, ...ecommerce } = payload;
+  pushToDataLayer({
+    event: 'purchase',
+    ecommerce: withCurrency(ecommerce),
+    ...(user_data ? { user_data } : {}),
+  });
 }

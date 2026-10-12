@@ -47,9 +47,6 @@ export const CartView: React.FC<CartViewProps> = ({
   const [appliedDiscountPercent, setAppliedDiscountPercent] = useState<number>(0);
   const [promoError, setPromoError] = useState('');
 
-  const rate = 1;
-  const symbol = '৳';
-
   const subtotal = items.reduce((sum, item) => {
     const itemPrice = item.customPrice || item.product.price;
     return sum + itemPrice * item.quantity;
@@ -57,7 +54,7 @@ export const CartView: React.FC<CartViewProps> = ({
   const totalCount = items.reduce((sum, item) => sum + item.quantity, 0);
   const discountPercent = enableCoupons ? appliedDiscountPercent : 0;
   const discountAmount = subtotal * discountPercent;
-  
+
   const freeShippingThreshold = deliveryConfig.freeDeliveryThreshold || 2000;
   const isFreeShipping = deliveryConfig.enableFreeDelivery && subtotal >= freeShippingThreshold;
   const baseShippingRate = deliveryConfig.insideDhakaCharge ?? 80;
@@ -159,16 +156,6 @@ export const CartView: React.FC<CartViewProps> = ({
               Shopping Cart <span className="text-sm font-normal text-stone-500">({totalCount} {totalCount === 1 ? 'item' : 'items'})</span>
             </h1>
           </div>
-
-          {/* Quick Free Shipping Status */}
-          <div className="bg-emerald-50 border border-emerald-200/80 rounded-xl px-4 py-2 flex items-center gap-2 self-start sm:self-auto text-xs text-emerald-900">
-            <Truck className="w-4 h-4 text-emerald-600 shrink-0" />
-            {isFreeShipping ? (
-              <span className="font-bold">You qualify for FREE doorstep shipping!</span>
-            ) : (
-              <span>Add <strong>{symbol}{((freeShippingThreshold - subtotal) * rate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong> more for FREE shipping</span>
-            )}
-          </div>
         </div>
 
         {/* 2-Column Desktop Grid */}
@@ -176,23 +163,6 @@ export const CartView: React.FC<CartViewProps> = ({
           
           {/* Left: Product List Table / Cards (8 Cols) */}
           <div className="lg:col-span-8 space-y-4">
-            
-            {/* Free Shipping Progress bar */}
-            <div className="bg-white p-4 rounded-2xl border border-stone-200/90 shadow-2xs">
-              <div className="flex justify-between text-xs font-semibold text-stone-700 mb-2">
-                <span>Free Delivery Progress</span>
-                <span className="text-emerald-700 font-bold">
-                  {Math.min(100, Math.round((subtotal / freeShippingThreshold) * 100))}%
-                </span>
-              </div>
-              <div className="w-full bg-stone-100 h-2 rounded-full overflow-hidden">
-                <div 
-                  className="bg-emerald-600 h-full rounded-full transition-all duration-500"
-                  style={{ width: `${Math.min(100, (subtotal / freeShippingThreshold) * 100)}%` }}
-                />
-              </div>
-            </div>
-
             {/* Cart Items List */}
             <div className="bg-white rounded-2xl border border-stone-200/90 shadow-2xs divide-y divide-stone-100 overflow-hidden">
               {items.map((item, idx) => (

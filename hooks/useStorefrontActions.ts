@@ -144,6 +144,14 @@ export function useStorefrontActions() {
           index,
         }));
 
+        const name = saved.customer?.fullName || saved.customerName || newOrder.customer?.fullName || '';
+        const phone = saved.customer?.phone || saved.customerPhone || newOrder.customer?.phone || '';
+        const addressParts = [
+          saved.customer?.address || saved.deliveryAddress || newOrder.customer?.address || '',
+          saved.customer?.city || saved.cityDistrict || newOrder.customer?.city || '',
+        ].filter(Boolean);
+        const address = addressParts.join(', ');
+
         trackPurchase({
           transaction_id: saved.id,
           value: saved.totalAmount ?? saved.total ?? 0,
@@ -152,6 +160,12 @@ export function useStorefrontActions() {
           tax: 0,
           items: gtmItems,
           ...(saved.couponCode ? { coupon: saved.couponCode } : {}),
+          user_data: {
+            ...(name ? { name } : {}),
+            ...(phone ? { phone } : {}),
+            ...(address ? { address } : {}),
+            timestamp: saved.createdAt || newOrder.createdAt || new Date().toISOString(),
+          },
         });
       }
 
