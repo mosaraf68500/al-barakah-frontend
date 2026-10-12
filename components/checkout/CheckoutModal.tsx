@@ -77,6 +77,25 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [orderSuccess, setOrderSuccess] = useState<any | null>(null);
 
+  // Admin toggles (default show). If every flag is off, fall back to showing all so checkout never empties.
+  const showAdvance = deliveryConfig.enableAdvanceDeliveryPayment !== false;
+  const showFullBkash = deliveryConfig.enableFullBkashPayment !== false;
+  const showFullCod = deliveryConfig.enableFullCodPayment !== false;
+  const anyPaymentEnabled = showAdvance || showFullBkash || showFullCod;
+  const showAdvanceOpt = anyPaymentEnabled ? showAdvance : true;
+  const showFullBkashOpt = anyPaymentEnabled ? showFullBkash : true;
+  const showFullCodOpt = anyPaymentEnabled ? showFullCod : true;
+
+  useEffect(() => {
+    const selectable: Array<'ADVANCE_DELIVERY' | 'FULL_BKASH' | 'FULL_COD'> = [];
+    if (showAdvanceOpt) selectable.push('ADVANCE_DELIVERY');
+    if (showFullBkashOpt) selectable.push('FULL_BKASH');
+    if (showFullCodOpt && !deliveryConfig.requireAdvanceDeliveryCharge) selectable.push('FULL_COD');
+    if (selectable.length > 0 && !selectable.includes(paymentMethod)) {
+      setPaymentMethod(selectable[0]);
+    }
+  }, [showAdvanceOpt, showFullBkashOpt, showFullCodOpt, deliveryConfig.requireAdvanceDeliveryCharge, paymentMethod]);
+
   // Safely compute subtotal & discount if not directly provided
   const computedSubtotal = items.reduce((sum, item) => {
     const itemPrice = item.customPrice ?? item.product?.price ?? 0;
@@ -565,6 +584,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
                   <div className="space-y-2.5">
                     {/* Option 1: Advance Delivery Charge Only (Recommended) */}
+                    {showAdvanceOpt && (
                     <div
                       onClick={() => setPaymentMethod('ADVANCE_DELIVERY')}
                       className={`p-3.5 sm:p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between gap-3 ${
@@ -597,8 +617,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         {paymentMethod === 'ADVANCE_DELIVERY' && <div className="w-2 h-2 rounded-full bg-white" />}
                       </div>
                     </div>
+                    )}
 
                     {/* Option 2: Full Payment via bKash */}
+                    {showFullBkashOpt && (
                     <div
                       onClick={() => setPaymentMethod('FULL_BKASH')}
                       className={`p-3.5 sm:p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between gap-3 ${
@@ -631,9 +653,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         {paymentMethod === 'FULL_BKASH' && <div className="w-2 h-2 rounded-full bg-white" />}
                       </div>
                     </div>
+                    )}
 
                     {/* Option 3: Full Cash on Delivery (Without Advance) */}
-                    {deliveryConfig.requireAdvanceDeliveryCharge ? (
+                    {showFullCodOpt && (deliveryConfig.requireAdvanceDeliveryCharge ? (
                       <div
                         className="p-3.5 sm:p-4 rounded-2xl border border-dashed border-stone-300 bg-stone-50/70 opacity-85 flex items-center justify-between gap-3 cursor-not-allowed"
                         title="ফেক অর্ডার প্রতিরোধে সম্পূর্ণ ক্যাশ অন ডেলিভারি বন্ধ রাখা হয়েছে"
@@ -688,7 +711,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                           {paymentMethod === 'FULL_COD' && <div className="w-2 h-2 rounded-full bg-white" />}
                         </div>
                       </div>
-                    )}
+                    ))}
                   </div>
 
                   {/* bKash Payment Details Section for Advance or Full bKash */}
