@@ -13,7 +13,6 @@ import {
   Minus, 
   Check, 
   Layers,
-  ChevronLeft,
   ChevronRight,
   Star,
   Sparkles,
@@ -26,9 +25,8 @@ import {
   MessageSquare,
   Send,
   CheckCircle2,
-  ThumbsUp,
   ArrowLeftRight,
-  ShieldCheck,
+  FileText,
   AlertCircle
 } from 'lucide-react';
 import { Product, Category, CategoryItem, ProductReview } from '@/types';
@@ -37,6 +35,54 @@ import { getSmartRelatedProducts } from '@/lib/catalog/relatedProducts';
 import { Navbar } from '@/components/layout/Navbar';
 import { TakaIcon } from '@/components/shared/TakaIcon';
 import { notify } from '@/lib/ui/notify';
+
+/** Presentation-only blocks from product.description text — no data/API change. */
+type DescriptionBlock =
+  | { type: 'separator' }
+  | { type: 'heading'; text: string }
+  | { type: 'feature'; label: string; body: string }
+  | { type: 'bullet'; text: string }
+  | { type: 'paragraph'; text: string };
+
+function parseDescriptionBlocks(description: string): DescriptionBlock[] {
+  const lines = description
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  return lines.map((line, index) => {
+    if (/^[-–—_=*]{4,}$/.test(line)) {
+      return { type: 'separator' };
+    }
+
+    const starHeading = line.match(/^[*★]+\s*(.+)$/);
+    if (starHeading) {
+      return { type: 'heading', text: starHeading[1].trim() };
+    }
+
+    const labeled = line.match(/^([^:]{2,48}):\s*(.+)$/u);
+    if (labeled && labeled[2].trim().length > 8) {
+      return { type: 'feature', label: labeled[1].trim(), body: labeled[2].trim() };
+    }
+
+    // Section titles inside description (not the product name / first line)
+    if (
+      index > 0 &&
+      line.length < 55 &&
+      !/[।]/.test(line) &&
+      (line.endsWith('?') || /উত্তর|কেন\s/.test(line))
+    ) {
+      return { type: 'heading', text: line };
+    }
+
+    // Short highlight lines (feature chips)
+    if (index > 0 && line.length <= 42 && !/[।]/.test(line) && !line.endsWith('?')) {
+      return { type: 'bullet', text: line };
+    }
+
+    return { type: 'paragraph', text: line };
+  });
+}
 
 interface ProductViewProps {
   product: Product | null;
@@ -418,24 +464,6 @@ export const ProductView: React.FC<ProductViewProps> = ({
                   </motion.div>
                 </AnimatePresence>
 
-                {/* Slider Prev / Next Arrows */}
-                <button
-                  type="button"
-                  onClick={handlePrevImage}
-                  className="absolute left-2.5 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/95 hover:bg-white shadow-md border border-stone-200 text-stone-700 flex items-center justify-center transition-all cursor-pointer z-10 hover:scale-108 active:scale-95"
-                  aria-label="Previous image"
-                >
-                  <ChevronLeft className="w-4 h-4 text-stone-700" />
-                </button>
-                <button
-                  type="button"
-                  onClick={handleNextImage}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/95 hover:bg-white shadow-md border border-stone-200 text-stone-700 flex items-center justify-center transition-all cursor-pointer z-10 hover:scale-108 active:scale-95"
-                  aria-label="Next image"
-                >
-                  <ChevronRight className="w-4 h-4 text-stone-700" />
-                </button>
-
                 {/* Stock Out Badge on Image */}
                 {isOutOfStock && (
                   <div className="absolute top-3 left-3 z-20">
@@ -445,8 +473,8 @@ export const ProductView: React.FC<ProductViewProps> = ({
                   </div>
                 )}
 
-                {/* Wishlist & Compare Icons */}
-                <div className="absolute top-3 right-3 flex flex-col gap-2 z-20">
+                {/* Wishlist Icon */}
+                <div className="absolute top-3 right-3 z-20">
                   <button
                     type="button"
                     onClick={() => onToggleWishlist(product)}
@@ -459,22 +487,6 @@ export const ProductView: React.FC<ProductViewProps> = ({
                   >
                     <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-current' : ''}`} />
                   </button>
-
-                  {onToggleCompare && (
-                    <button
-                      type="button"
-                      onClick={() => onToggleCompare(product)}
-                      className={`p-2 rounded-full shadow-xs transition-colors cursor-pointer ${
-                        isCompared
-                          ? 'bg-[#f38018] text-white border border-[#f38018]'
-                          : 'bg-white/90 text-stone-400 hover:text-[#f38018] border border-stone-200'
-                      }`}
-                      title={isCompared ? 'In Comparison (তুলনা থেকে সরান)' : 'Compare (পণ্য তুলনা করুন)'}
-                      aria-label="Toggle compare"
-                    >
-                      <ArrowLeftRight className="w-4 h-4 stroke-[2.4]" />
-                    </button>
-                  )}
                 </div>
               </div>
 
@@ -665,16 +677,132 @@ export const ProductView: React.FC<ProductViewProps> = ({
           </div>
         </div>
 
-        {/* 3. PRODUCT DESCRIPTION (ONLY REAL ENGLISH DESCRIPTION) */}
+        {/* 3. PRODUCT DESCRIPTION */}
         {product.description && (
-          <div className="bg-white rounded-2xl border border-stone-200/90 shadow-sm p-4 sm:p-7 space-y-3">
-            <h3 className="text-base sm:text-lg font-bold text-stone-900 border-b border-stone-200 pb-2">
-              Product Description
-            </h3>
-            <p className="text-xs sm:text-sm text-stone-700 leading-relaxed whitespace-pre-line">
-              {product.description}
-            </p>
-          </div>
+          <section className="overflow-hidden rounded-2xl border border-stone-200/90 bg-white shadow-sm">
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.5 }}
+              transition={{ duration: 0.4, ease: [0.25, 1, 0.5, 1] }}
+              className="relative flex items-center gap-3 border-b border-stone-100 px-5 py-4 sm:px-7 sm:py-5 overflow-hidden"
+            >
+              <div
+                className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#0A3828]/[0.06] via-amber-50/50 to-transparent"
+                aria-hidden="true"
+              />
+              <motion.div
+                initial={{ scale: 0.85, opacity: 0 }}
+                whileInView={{ scale: 1, opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.45, delay: 0.05, ease: [0.25, 1, 0.5, 1] }}
+                className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#0A3828] text-amber-400 shadow-sm"
+              >
+                <FileText className="h-5 w-5" strokeWidth={2.2} />
+              </motion.div>
+              <div className="relative min-w-0">
+                <motion.h3
+                  initial={{ opacity: 0, x: -10 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.4, delay: 0.08, ease: [0.25, 1, 0.5, 1] }}
+                  className="text-base sm:text-lg font-extrabold text-stone-900 tracking-tight"
+                >
+                  Product Description
+                </motion.h3>
+                <motion.div
+                  initial={{ scaleX: 0 }}
+                  whileInView={{ scaleX: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: 0.2, ease: [0.25, 1, 0.5, 1] }}
+                  className="mt-1.5 h-0.5 w-16 origin-left rounded-full bg-gradient-to-r from-[#f38018] to-[#0A3828]"
+                />
+              </div>
+            </motion.div>
+
+            <div className="px-5 py-5 sm:px-7 sm:py-6">
+              <div className="space-y-3.5 font-bengali">
+                {parseDescriptionBlocks(product.description).map((block, idx) => {
+                  if (block.type === 'separator') {
+                    return (
+                      <motion.div
+                        key={`sep-${idx}`}
+                        initial={{ opacity: 0, scaleX: 0.6 }}
+                        whileInView={{ opacity: 1, scaleX: 1 }}
+                        viewport={{ once: true, amount: 0.2 }}
+                        transition={{ duration: 0.35, delay: Math.min(idx * 0.03, 0.25) }}
+                        className="h-px w-full origin-left bg-gradient-to-r from-transparent via-stone-200 to-transparent my-2"
+                      />
+                    );
+                  }
+
+                  if (block.type === 'heading') {
+                    return (
+                      <motion.h4
+                        key={`h-${idx}`}
+                        initial={{ opacity: 0, y: 8 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true, amount: 0.3 }}
+                        transition={{ duration: 0.35, delay: Math.min(idx * 0.03, 0.25) }}
+                        className="pt-1 text-[15px] sm:text-base font-extrabold text-[#0A3828] tracking-tight"
+                      >
+                        {block.text}
+                      </motion.h4>
+                    );
+                  }
+
+                  if (block.type === 'bullet') {
+                    return (
+                      <motion.div
+                        key={`b-${idx}`}
+                        initial={{ opacity: 0, x: -6 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true, amount: 0.3 }}
+                        transition={{ duration: 0.3, delay: Math.min(idx * 0.03, 0.25) }}
+                        className="flex items-start gap-2.5"
+                      >
+                        <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#f38018]" />
+                        <span className="text-sm sm:text-[15px] font-semibold text-stone-800 leading-relaxed">
+                          {block.text}
+                        </span>
+                      </motion.div>
+                    );
+                  }
+
+                  if (block.type === 'feature') {
+                    return (
+                      <motion.div
+                        key={`f-${idx}`}
+                        initial={{ opacity: 0, y: 8 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true, amount: 0.25 }}
+                        transition={{ duration: 0.35, delay: Math.min(idx * 0.03, 0.25) }}
+                        className="rounded-xl border border-stone-100 bg-stone-50/80 px-3.5 py-3 sm:px-4"
+                      >
+                        <p className="text-sm sm:text-[15px] leading-[1.75] text-stone-600">
+                          <span className="font-extrabold text-[#0A3828]">{block.label}:</span>{' '}
+                          {block.body}
+                        </p>
+                      </motion.div>
+                    );
+                  }
+
+                  return (
+                    <motion.p
+                      key={`p-${idx}`}
+                      initial={{ opacity: 0, y: 6 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true, amount: 0.3 }}
+                      transition={{ duration: 0.3, delay: Math.min(idx * 0.03, 0.25) }}
+                      className="text-sm sm:text-[15px] leading-[1.85] text-stone-600 font-medium"
+                    >
+                      {block.text}
+                    </motion.p>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
         )}
 
         {/* 4. CUSTOMER REVIEWS & RATINGS SECTION (TOGGLEABLE VIA ADMIN) */}
