@@ -4,7 +4,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { SafeImage } from '@/components/shared/SafeImage';
 import { 
   ShoppingCart, 
-  User, 
   Search, 
   X, 
   Heart, 
@@ -14,8 +13,6 @@ import {
   Sparkles,
   ChevronRight,
   Menu as MenuIcon,
-  LogIn,
-  LogOut,
   PhoneCall,
   Package,
   Layers,
@@ -23,7 +20,6 @@ import {
   ArrowLeftRight
 } from 'lucide-react';
 import { Category, CategoryItem, Product } from '@/types';
-import { useAuth } from '@/providers/AuthProvider';
 import { AlBarakahLogo } from '@/components/shared/AlBarakahLogo';
 import { GhorerBazarCategoryNav } from './CategoryNav';
 
@@ -69,13 +65,15 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenWishlist,
   onOpenCompare,
   onOpenOrders,
-  onOpenCustomerDashboard,
-  onOpenAuth,
+  onOpenCustomerDashboard: _onOpenCustomerDashboard,
+  onOpenAuth: _onOpenAuth,
   categories = [],
   products = [],
   onSelectProduct,
 }) => {
-  const { user, profile, openAuthModal, signOut } = useAuth();
+  // Customer login / dashboard temporarily disabled — keep props for API compatibility.
+  void _onOpenCustomerDashboard;
+  void _onOpenAuth;
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
@@ -94,32 +92,6 @@ export const Navbar: React.FC<NavbarProps> = ({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  const handleProfileClick = () => {
-    if (user) {
-      if (onOpenCustomerDashboard) {
-        onOpenCustomerDashboard();
-      } else if (onOpenAuth) {
-        onOpenAuth('LOGIN');
-      }
-    } else {
-      if (onOpenAuth) {
-        onOpenAuth('LOGIN');
-      } else {
-        openAuthModal();
-      }
-    }
-  };
-
-  const handleAuthAction = () => {
-    if (user) {
-      signOut();
-    } else if (onOpenAuth) {
-      onOpenAuth('LOGIN');
-    } else {
-      openAuthModal();
-    }
-  };
 
   // Live filter results for quick dropdown recommendation
   const searchMatches = searchQuery.trim()
@@ -375,27 +347,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               </span>
             </button>
 
-            {/* 5. Sign In / Profile (User + Sign In / User Name / Admin) */}
-            <button
-              onClick={handleProfileClick}
-              className="flex flex-col items-center justify-center text-stone-700 hover:text-[#0A3828] transition-colors cursor-pointer group select-none relative"
-              id="header-profile-btn"
-              title={user ? "Customer Dashboard" : "Sign In"}
-            >
-              {user?.photoURL ? (
-                <SafeImage 
-                  src={user.photoURL} 
-                  alt="User" 
-                  className="w-4.5 h-4.5 sm:w-5 sm:h-5 rounded-full object-cover border border-amber-500/50" 
-                  referrerPolicy="no-referrer"
-                />
-              ) : (
-                <User className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-stone-700 group-hover:text-[#0A3828] transition-colors stroke-[1.5]" />
-              )}
-              <span className="text-[9px] sm:text-[11px] mt-0.5 tracking-tight whitespace-nowrap max-w-[55px] sm:max-w-[65px] truncate font-medium text-stone-700 group-hover:text-[#0A3828]">
-                {user ? (profile?.name ? profile.name.split(' ')[0] : 'Profile') : 'Sign In'}
-              </span>
-            </button>
+            {/* Customer Sign In / Profile temporarily disabled — guest checkout only */}
 
           </div>
         </div>
@@ -614,22 +566,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </button>
                 )}
 
-                {/* 3. Customer Account */}
-                <button
-                  onClick={() => {
-                    setIsMoreMenuOpen(false);
-                    handleProfileClick();
-                  }}
-                  className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-stone-50 text-stone-800 text-xs font-bold transition-colors cursor-pointer group"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-emerald-50 text-[#0A3828] group-hover:bg-[#0A3828] group-hover:text-white transition-colors">
-                      <User className="w-4 h-4" />
-                    </div>
-                    <span>{user ? 'My Profile & Dashboard' : 'Login / Register'}</span>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-stone-400 group-hover:translate-x-0.5 transition-transform" />
-                </button>
+                {/* Customer Account / Login temporarily disabled — guest checkout only */}
 
                 {/* 4. Categories list */}
                 <div className="pt-2">

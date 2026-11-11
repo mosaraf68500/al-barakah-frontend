@@ -7,14 +7,11 @@ import {
   ShoppingBag, 
   Trash2, 
   ArrowLeft, 
-  Info, 
-  LogIn, 
   Sparkles, 
   ShieldCheck, 
   Check 
 } from 'lucide-react';
 import { Product } from '@/types';
-import { useAuth } from '@/providers/AuthProvider';
 import { TakaIcon } from '@/components/shared/TakaIcon';
 
 interface WishlistViewProps {
@@ -25,7 +22,6 @@ interface WishlistViewProps {
   onQuickView: (product: Product) => void;
   onDirectBuy: (product: Product) => void;
   currency: 'USD' | 'BDT';
-  onOpenAuth: () => void;
 }
 
 export const WishlistView: React.FC<WishlistViewProps> = ({
@@ -36,9 +32,7 @@ export const WishlistView: React.FC<WishlistViewProps> = ({
   onQuickView,
   onDirectBuy,
   currency,
-  onOpenAuth,
 }) => {
-  const { user } = useAuth();
   const rate = 1;
   const symbol = '৳';
 
@@ -103,29 +97,6 @@ export const WishlistView: React.FC<WishlistViewProps> = ({
             </h1>
           </div>
         </div>
-
-        {/* Guest Reminder Banner */}
-        {!user && (
-          <div className="mb-6 p-4 rounded-2xl bg-amber-50/80 border border-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
-            <div className="flex items-start gap-2.5">
-              <Info className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
-              <div>
-                <h4 className="text-xs font-bold text-amber-900">Keep Your Wishlist Synced</h4>
-                <p className="text-[11px] text-amber-800/90">
-                  You are browsing as a guest. Sign in to access your saved items from any device.
-                </p>
-              </div>
-            </div>
-
-            <button
-              onClick={onOpenAuth}
-              className="shrink-0 px-4 py-2 rounded-xl bg-[#FF5722] hover:bg-[#F4511E] text-white font-bold text-xs uppercase tracking-wider transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer"
-            >
-              <LogIn className="w-3.5 h-3.5" />
-              <span>LOGIN NOW</span>
-            </button>
-          </div>
-        )}
 
         {/* Wishlist Items Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

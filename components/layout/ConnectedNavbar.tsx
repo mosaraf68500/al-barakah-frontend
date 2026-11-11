@@ -52,8 +52,10 @@ export function ConnectedNavbar({ onCloseOverride }: { onCloseOverride?: () => v
       onOpenWishlist={() => router.push('/wishlist')}
       onOpenCompare={() => useUiStore.getState().setCompareOpen(true)}
       onOpenOrders={() => router.push('/track')}
-      onOpenAuth={(tab) => router.push(tab === 'TRACK' ? '/track' : '/login')}
-      onOpenCustomerDashboard={() => router.push('/account')}
+      onOpenAuth={(tab) => {
+        if (tab === 'TRACK') router.push('/track');
+      }}
+      onOpenCustomerDashboard={() => router.push('/')}
       categories={categories}
       products={products}
       onSelectProduct={(p) => actions.openProduct(p)}

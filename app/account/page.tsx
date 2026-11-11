@@ -1,12 +1,6 @@
-import type { Metadata } from 'next';
-import { AccountPage } from '@/components/account/AccountPage';
-import { getSettings } from '@/lib/api';
-import { staticPageMetadata } from '@/lib/seo/metadata';
+import { redirect } from 'next/navigation';
 
-export async function generateMetadata(): Promise<Metadata> {
-  return staticPageMetadata('account', await getSettings());
-}
-
+/** Customer dashboard temporarily disabled — guest checkout only. */
 export default function Page() {
-  return <AccountPage />;
+  redirect('/');
 }

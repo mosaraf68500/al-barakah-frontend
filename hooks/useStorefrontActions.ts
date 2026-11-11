@@ -7,7 +7,6 @@ import type { Order, Product, ProductReview } from '@/types';
 import { createOrder, createReview, sendOrderNotification, toggleWishlistItem } from '@/lib/api';
 import { ApiError } from '@/lib/api/http';
 import { useAuth } from '@/providers/AuthProvider';
-import { CHECKOUT_PATH, CHECKOUT_SIGN_IN_MESSAGE } from '@/lib/auth/returnTo';
 import { productHref } from '@/lib/catalog/urls';
 import { trackFbAddToCart, trackFbPurchase } from '@/lib/analytics/facebookPixel';
 import { trackAddToCart, trackPurchase } from '@/lib/gtm';
@@ -106,26 +105,15 @@ export function useStorefrontActions() {
 
     const openProduct = (p: Product) => router.push(productHref(p));
 
-    /** Quick "Buy now": checkout without touching the persistent cart (legacy `handleBuyNow`). */
+    /** Quick "Buy now": checkout without touching the persistent cart (legacy `handleBuyNow`). Guest checkout allowed. */
     const buyNow = (product: Product, quantity = 1, color?: string, size?: string, customPrice?: number) => {
       const item = { product, quantity, selectedColor: color, selectedSize: size, customPrice };
-      if (!user) {
-        useUiStore.setState({ quickBuyItem: item });
-        notify(CHECKOUT_SIGN_IN_MESSAGE);
-        router.push(`/login?returnTo=${encodeURIComponent(CHECKOUT_PATH)}`);
-        return;
-      }
       if (window.location.pathname.startsWith('/product/')) router.push('/');
       useUiStore.getState().openCheckout(item);
     };
 
-    /** Legacy `handleOrderPlaced`, minus the admin-only bits. Returns the order the API stored. */
+    /** Legacy `handleOrderPlaced`, minus the admin-only bits. Returns the order the API stored. Guest checkout allowed. */
     const placeOrder = async (newOrder: Order) => {
-      if (!user) {
-        notify(CHECKOUT_SIGN_IN_MESSAGE);
-        router.push(`/login?returnTo=${encodeURIComponent(CHECKOUT_PATH)}`);
-        throw new Error('LOGIN_REQUIRED');
-      }
       const saved = await createOrder(newOrder);
       void sendOrderNotification(saved);
 

@@ -18,7 +18,6 @@ export function WishlistPage() {
       onQuickView={actions.openProduct}
       onDirectBuy={(p) => actions.buyNow(p, 1)}
       currency="BDT"
-      onOpenAuth={() => router.push('/login')}
     />
   );
 }

@@ -106,7 +106,9 @@ export function ProductViewContainer({ product: initialProduct, mode }: { produc
         onOpenCompare={() => setCompareOpen(true)}
         onOpenOrders={() => router.push('/track')}
         onOpenCustomerDashboard={() => router.push('/account')}
-        onOpenAuth={(tab) => router.push(tab === 'TRACK' ? '/track' : '/login')}
+        onOpenAuth={(tab) => {
+          if (tab === 'TRACK') router.push('/track');
+        }}
         categories={categories}
         enableCustomerReviews={settings.enableCustomerReviews}
         reviews={reviews}
